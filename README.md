@@ -43,8 +43,8 @@ Whenever we are creating pipeline, it is best practice to test application local
 
 - Clone/Fork the Repo. 
     ```
-    git clone https://github.com/infosecsingh/Flask-App-GitHub-Actions-ArgoCD.git
-    cd Flask-App-GitHub-Actions-ArgoCD
+    git clone https://github.com/YogeshAbnave/ArgoCD-GenAI-Deployment.git
+    cd ArgoCD-GenAI-Deployment
     ```
 - Install Dependence
     ```
@@ -64,7 +64,7 @@ Note: This application is running on 5000 port, but if you want to change, you c
 ---
 ## Containerized Application.
 Before creating pipeline, test locally if your dockerfile is accurate by running container. 
-We will create Dockerfile. If you don't know what is docker, please read some basic understanding about docker: https://github.com/infosecsingh/Learn-Docker
+We will create Dockerfile. If you don't know what is docker, please read some basic understanding about docker: https://github.com/YogeshAbnave/Learn-Docker
 
 Write Dockerfile
 ```
@@ -89,7 +89,7 @@ CMD ["python", "app.py"]
 #### Lets Build and Run the Container
 1. Build the Image: Run the following in the directory containing your Dockerfile:
 ```
-docker build -t 1nfosecsingh/demo-app:v1 .
+docker build -t genaiyogeshabnave/demo-app:v1 .
 ```
 Note: you need to change the name of your image, according to your dockerhub username.
 
@@ -176,11 +176,11 @@ Note: you need to change the name of your image, according to your dockerhub use
         # Update Github
         - name: Commit the changes
             run: |
-            git config --global user.email "<infosecsingh@gmail.com>"
+            git config --global user.email "<iamyogeshabnave@gmail.com>"
             git config --global user.name "GitHub Actions Bot"
             git add deploy/deploy.yaml
             git commit -m "Update deploy.yaml with new image version - ${{ env.VERSION }}"
-            git remote set-url origin https://github-actions:${{ secrets.GITHUB_TOKEN }}@github.com/infosecsingh/Flask-App-GitHub-Actions-ArgoCD.git
+            git remote set-url origin https://github-actions:${{ secrets.ARGOCD_TOKEN }}@github.com/YogeshAbnave/ArgoCD-GenAI-Deployment.git
             git push origin master
     ```
 

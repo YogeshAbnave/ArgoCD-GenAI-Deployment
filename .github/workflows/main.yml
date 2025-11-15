@@ -3,7 +3,7 @@ name: Test and Build
 on:
   push:
     branches:
-      - master
+      - main
     paths:
       - '**/*'
 
@@ -50,33 +50,26 @@ jobs:
       # Build the Docker Image
       - name: Build Docker Image
         run: |
-          docker build . -t 1nfosecsingh/demo-app:${{ env.VERSION }} 
+          docker build . -t genaiyogeshabnave/demo-app:${{ env.VERSION }} 
       
       # Push the Docker Image
       - name: Push Docker Image
         run: |
-          docker push 1nfosecsingh/demo-app:${{ env.VERSION }}
+          docker push genaiyogeshabnave/demo-app:${{ env.VERSION }}
       
       # UPdate the K8s Manifest Files
       - name: Update K8s Manifests
         run: |
           cat deploy/deploy.yaml
-          sed -i "s|image: 1nfosecsingh/demo-app:.*|image: 1nfosecsingh/demo-app:${{ env.VERSION }}|g" deploy/deploy.yaml
+          sed -i "s|image: genaiyogeshabnave/demo-app:.*|image: genaiyogeshabnave/demo-app:${{ env.VERSION }}|g" deploy/deploy.yaml
           cat deploy/deploy.yaml
 
       # Update Github
       - name: Commit the changes
         run: |
-          git config --global user.email "<>"
+          git config --global user.email "iamyogeshabnave@gmail.com"
           git config --global user.name "GitHub Actions Bot"
           git add deploy/deploy.yaml
           git commit -m "Update deploy.yaml with new image version - ${{ env.VERSION }}"
-          git remote set-url origin https://github-actions:${{ secrets.GITHUB_TOKEN }}@github.com/infosecsingh/Flask-App-GitHub-Actions-ArgoCD.git
-          git push origin master
-
-      
-
-
-        
-      
-
+          git remote set-url origin https://github-actions:${{ secrets.ARGOCD_TOKEN }}@github.com/YogeshAbnave/ArgoCD-GenAI-Deployment.git
+          git push origin main

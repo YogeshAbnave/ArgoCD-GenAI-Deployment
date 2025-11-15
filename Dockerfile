@@ -1,20 +1,16 @@
-FROM python:3.14.0a3-alpine3.21
+FROM python:3.11-alpine
 
-# Set the working directory
+# Set working directory
 WORKDIR /app
 
-# Copy the current directory contents into the container at /app
-COPY . . 
+# Install dependencies
+COPY requirements.txt .
 
-# Install any needed packages specified in requirements.txt
-RUN pip install -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
-#Expose the port
+# Copy rest of the project
+COPY . .
+
 EXPOSE 5000
 
-# Run app.py when the container launches
 CMD ["python", "app.py"]
-
-
-
-
