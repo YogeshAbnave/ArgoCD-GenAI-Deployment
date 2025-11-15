@@ -159,18 +159,18 @@ Note: you need to change the name of your image, according to your dockerhub use
         # Build the Docker Image
         - name: Build Docker Image
             run: |
-            docker build . -t 1nfosecsingh/demo-app:${{ env.VERSION }} 
+            docker build . -t genaiyogeshabnave/demo-app:${{ env.VERSION }} 
         
         # Push the Docker Image
         - name: Push Docker Image
             run: |
-            docker push 1nfosecsingh/demo-app:${{ env.VERSION }}
+            docker push genaiyogeshabnave/demo-app:${{ env.VERSION }}
         
         # UPdate the K8s Manifest Files
         - name: Update K8s Manifests
             run: |
             cat deploy/deploy.yaml
-            sed -i "s|image: 1nfosecsingh/demo-app:.*|image: 1nfosecsingh/demo-app:${{ env.VERSION }}|g" deploy/deploy.yaml
+            sed -i "s|image: genaiyogeshabnave/demo-app:.*|image: genaiyogeshabnave/demo-app:${{ env.VERSION }}|g" deploy/deploy.yaml
             cat deploy/deploy.yaml
 
         # Update Github
