@@ -70,6 +70,6 @@ jobs:
           git config --global user.email "iamyogeshabnave@gmail.com"
           git config --global user.name "GitHub Actions Bot"
           git add deploy/deploy.yaml
-          git commit -m "Update deploy.yaml with new image version - ${{ env.VERSION }}"
+          git diff --staged --quiet || git commit -m "Update deploy.yaml with new image version - ${{ env.VERSION }}"
           git remote set-url origin https://github-actions:${{ secrets.ARGOCD_TOKEN }}@github.com/YogeshAbnave/ArgoCD-GenAI-Deployment.git
-          git push origin main
+          git push origin main || echo "No changes to push"
