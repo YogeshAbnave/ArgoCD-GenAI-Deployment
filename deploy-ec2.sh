@@ -1,16 +1,15 @@
 #!/bin/bash
 
 ###################################
-# Flask Weather App Deployment Script
-# Deploys Flask weather application to EC2
+# Flask Weather App - EC2 Deployment Script
+# Deploys Flask application to EC2 instance
 ###################################
 
-set -e  # Exit on error
+set -e
 
 ### -------------------------------
 ### CONFIGURATION
 ### -------------------------------
-GITHUB_USER="YogeshAbnave"
 GITHUB_REPO="https://github.com/YogeshAbnave/ArgoCD-GenAI-Deployment.git"
 BRANCH="main"
 APP_DIR="/opt/app"
@@ -29,21 +28,17 @@ echo "========================================="
 ### -------------------------------
 ### STEP 1: SYSTEM UPDATE & DEPENDENCIES
 ### -------------------------------
-echo "📦 Updating system packages..."
-sudo yum update -y
-
-echo "📦 Installing Git, Python3, and pip..."
-sudo yum install -y git python3 python3-pip
-
-echo "📦 Installing additional dependencies..."
-sudo yum install -y gcc python3-devel
+echo "📦 Updating system and installing dependencies..."
+sudo yum update -y || sudo apt-get update -y
+sudo yum install -y git python3 python3-pip gcc python3-devel wget curl || \
+sudo apt-get install -y git python3 python3-pip gcc python3-dev wget curl
 
 ### -------------------------------
-### STEP 2: CREATE DEPLOYMENT DIRECTORY
+### STEP 2: CREATE APP DIRECTORY
 ### -------------------------------
 echo "📁 Creating application directory..."
 sudo mkdir -p $APP_DIR
-sudo chown -R ec2-user:ec2-user $APP_DIR
+sudo chown -R $USER:$USER $APP_DIR
 cd $APP_DIR
 
 ### -------------------------------
@@ -53,8 +48,7 @@ if [ ! -d "$APP_DIR/.git" ]; then
     echo "🧬 Cloning repository..."
     git clone -b $BRANCH $GITHUB_REPO $APP_DIR
 else
-    echo "🔄 Pulling latest changes..."
-    cd $APP_DIR
+    echo "🔄 Updating repository..."
     git fetch origin
     git reset --hard origin/$BRANCH
 fi
@@ -63,87 +57,81 @@ fi
 ### STEP 4: PYTHON VIRTUAL ENVIRONMENT
 ### -------------------------------
 echo "🐍 Setting up Python virtual environment..."
-
-# Remove old venv if exists
-if [ -d "venv" ]; then
-    echo "🧹 Removing old virtual environment..."
-    rm -rf venv
-fi
-
+rm -rf venv
 $PYTHON_BIN -m venv venv
 source venv/bin/activate
 
 echo "📦 Installing Python dependencies..."
 pip install --upgrade pip
-pip install --ignore-installed -r requirements.txt
+pip install -r requirements.txt
 
 ### -------------------------------
-### STEP 5: CLEANUP OLD PROCESSES
+### STEP 5: STOP OLD PROCESSES
 ### -------------------------------
-echo "🧹 Cleaning up old Flask processes..."
+echo "🧹 Stopping old Flask processes..."
 pkill -f "flask" || true
 pkill -f "$FLASK_APP" || true
-echo "✅ Killed existing Flask processes"
 sleep 2
 
 ### -------------------------------
 ### STEP 6: START FLASK APPLICATION
 ### -------------------------------
-echo "🚀 Starting Flask weather app on port $PORT..."
+echo "🚀 Starting Flask app on port $PORT..."
 
-# Check if Flask app exists
 if [ ! -f "$FLASK_APP" ]; then
     echo "❌ Error: Flask app not found at $FLASK_APP"
     exit 1
 fi
 
-# Set Flask environment variables
 export FLASK_APP="$FLASK_APP"
-export FLASK_ENV=production
+export FLASK_ENV="production"
 
-# Start Flask app
 nohup venv/bin/python "$FLASK_APP" > flask.log 2>&1 &
-
 APP_PID=$!
-echo "✅ Flask started with PID: $APP_PID"
-echo "📝 Logs: tail -f $APP_DIR/flask.log"
 
-### -------------------------------
-### STEP 7: FIREWALL & SECURITY
-### -------------------------------
-echo "🔓 Configuring firewall for port $PORT..."
-sudo firewall-cmd --add-port=${PORT}/tcp --permanent 2>/dev/null || true
-sudo firewall-cmd --reload 2>/dev/null || true
-
-# Alternative: iptables (if firewalld not available)
-sudo iptables -I INPUT -p tcp --dport $PORT -j ACCEPT 2>/dev/null || true
-
-### -------------------------------
-### STEP 8: VERIFY STARTUP
-### -------------------------------
-echo "⏳ Waiting for Flask to start..."
-sleep 5
+sleep 4
 
 if ps -p $APP_PID > /dev/null 2>&1; then
-    echo "✅ Flask is running!"
+    echo "✅ Flask started successfully (PID: $APP_PID)"
 else
-    echo "❌ Flask failed to start. Checking logs..."
-    tail -30 flask.log
+    echo "❌ Flask failed to start. Logs:"
+    tail -20 flask.log
     exit 1
 fi
 
 ### -------------------------------
-### STEP 9: STATUS & ACCESS INFO
+### STEP 7: CONFIGURE FIREWALL
+### -------------------------------
+echo "🔓 Configuring firewall for port $PORT..."
+sudo firewall-cmd --add-port=${PORT}/tcp --permanent 2>/dev/null || true
+sudo firewall-cmd --reload 2>/dev/null || true
+sudo iptables -I INPUT -p tcp --dport $PORT -j ACCEPT 2>/dev/null || true
+
+### -------------------------------
+### STEP 8: INSTALL DOCKER (OPTIONAL)
+### -------------------------------
+echo "🐳 Installing Docker..."
+if ! command -v docker &> /dev/null; then
+    sudo apt-get install -y docker.io || sudo yum install -y docker
+    sudo systemctl start docker
+    sudo systemctl enable docker
+    sudo usermod -aG docker $USER
+    echo "✅ Docker installed successfully"
+else
+    echo "✅ Docker already installed"
+fi
+
+### -------------------------------
+### STEP 9: DEPLOYMENT INFO
 ### -------------------------------
 PUBLIC_IP=$(curl -s http://checkip.amazonaws.com 2>/dev/null || echo "Unable to fetch")
 PRIVATE_IP=$(hostname -I | awk '{print $1}')
 
 echo ""
 echo "========================================="
-echo "✅ Deployment completed successfully!"
+echo "✅ DEPLOYMENT SUCCESSFUL!"
 echo "========================================="
 echo "📂 App directory: $APP_DIR"
-echo "🌤️  App: Flask Weather Application"
 echo "🆔 Process ID: $APP_PID"
 echo ""
 echo "🌐 Access URLs:"
@@ -153,47 +141,9 @@ echo ""
 echo "📜 View logs:"
 echo "   tail -f $APP_DIR/flask.log"
 echo ""
-echo "🛑 Stop application:"
+echo "🛑 Stop app:"
 echo "   pkill -f flask"
 echo ""
 echo "🔄 Redeploy:"
 echo "   bash $APP_DIR/deploy-ec2.sh"
 echo "========================================="
-
-# Save deployment info
-cat > $APP_DIR/deployment-info.txt <<EOF
-Deployment Date: $(date)
-App: Flask Weather Application
-Port: $PORT
-PID: $APP_PID
-Public IP: $PUBLIC_IP
-Private IP: $PRIVATE_IP
-Repository: $GITHUB_REPO
-Branch: $BRANCH
-EOF
-
-echo "💾 Deployment info saved to: $APP_DIR/deployment-info.txt"
-
-
-
-
-
-
-# Update package index
-sudo apt-get update
-
-# Install Docker
-sudo apt-get install -y docker.io
-
-# Start and enable Docker service
-sudo systemctl start docker
-sudo systemctl enable docker
-
-# Add your user to docker group to run without sudo
-sudo usermod -aG docker $USER
-
-# Apply group changes (or logout/login)
-newgrp docker
-
-# Verify Docker installation
-docker --version
