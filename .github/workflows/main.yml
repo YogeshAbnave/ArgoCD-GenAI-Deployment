@@ -57,19 +57,19 @@ jobs:
         run: |
           docker push genaiyogeshabnave/demo-app:${{ env.VERSION }}
       
-      # UPdate the K8s Manifest Files
+      # Update the K8s Manifest Files
       - name: Update K8s Manifests
         run: |
-          cat deploy/deploy.yaml
-          sed -i "s|image: genaiyogeshabnave/demo-app:.*|image: genaiyogeshabnave/demo-app:${{ env.VERSION }}|g" deploy/deploy.yaml
-          cat deploy/deploy.yaml
+          echo "Updating k8s/deployment.yaml with new image version"
+          sed -i "s|image: genaiyogeshabnave/demo-app:.*|image: genaiyogeshabnave/demo-app:${{ env.VERSION }}|g" k8s/deployment.yaml
+          cat k8s/deployment.yaml
 
       # Update Github
       - name: Commit the changes
         run: |
           git config --global user.email "iamyogeshabnave@gmail.com"
           git config --global user.name "GitHub Actions Bot"
-          git add deploy/deploy.yaml
-          git diff --staged --quiet || git commit -m "Update deploy.yaml with new image version - ${{ env.VERSION }}"
+          git add k8s/deployment.yaml
+          git diff --staged --quiet || git commit -m "Update k8s deployment with new image version - ${{ env.VERSION }}"
           git remote set-url origin https://github-actions:${{ secrets.ARGOCD_TOKEN }}@github.com/YogeshAbnave/ArgoCD-GenAI-Deployment.git
           git push origin main || echo "No changes to push"
